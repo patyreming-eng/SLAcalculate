@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>โปรแกรมคำนวณระดับความรุนแรง SLA (SLA Severity Calculator)</title>
+    <title>SLA Severity Calculator (อ้างอิงเอกสาร SKY-WI-OS-02)</title>
     <style>
         :root {
             --primary-color: #003366;
@@ -13,7 +13,7 @@
             --critical-color: #e74c3c;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f6f9;
             margin: 0;
             padding: 20px;
@@ -47,15 +47,15 @@
             border: 2px solid #e9ecef;
             padding: 25px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .form-group {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
             margin-bottom: 20px;
         }
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .form-group { grid-template-columns: 1fr; }
         }
         label {
@@ -71,6 +71,7 @@
             border-radius: 6px;
             font-size: 16px;
             box-sizing: border-box;
+            background-color: #fff;
         }
         input:focus, select:focus {
             outline: none;
@@ -87,119 +88,205 @@
             display: none;
             transition: all 0.3s ease;
         }
-        .result-title {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-            color: #6c757d;
+        .result-title { font-size: 14px; text-transform: uppercase; margin-bottom: 5px; }
+        .result-value { font-size: 28px; margin-bottom: 5px; }
+        .resolution-time { 
+            font-size: 20px; 
+            margin-top: 15px; 
+            padding-top: 15px; 
+            border-top: 1px dashed rgba(0,0,0,0.2); 
+            color: #000;
         }
-        .result-value {
-            font-size: 28px;
-            margin-bottom: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 14px;
-        }
-        th, td {
-            border: 1px solid #dee2e6;
-            padding: 12px;
-            text-align: center;
-        }
-        th {
-            background-color: #f1f3f5;
-            color: #495057;
-        }
-        .bg-low { background-color: rgba(46, 204, 113, 0.15); color: #1e7e34; }
-        .bg-medium { background-color: rgba(241, 196, 15, 0.15); color: #9a7d0a; }
-        .bg-high { background-color: rgba(230, 126, 34, 0.15); color: #d35400; }
-        .bg-critical { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; }
         
-        .badge {
-            padding: 5px 10px;
+        .info-panel {
+            background-color: #e3f2fd;
+            border-left: 5px solid #1976d2;
+            padding: 15px;
             border-radius: 4px;
-            font-weight: bold;
-            color: white;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.6;
+            display: none;
         }
-        .badge-low { background-color: var(--low-color); }
-        .badge-medium { background-color: var(--medium-color); color: #333; }
-        .badge-high { background-color: var(--high-color); }
-        .badge-critical { background-color: var(--critical-color); }
+        .info-panel h4 { margin-top: 0; color: #1565c0; margin-bottom: 10px;}
+        .info-panel ul { margin: 0; padding-left: 20px; }
+        
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header-bar">เกณฑ์การเปิดเคสตาม SLA แยกตามระบบ</div>
+    <div class="header-bar">ระบบคำนวณเกณฑ์เปิดเคสและ SLA (อ้างอิง SKY-WI-OS-02)</div>
     
     <div class="calculator-section">
-        <h3>เครื่องมือคำนวณระดับความรุนแรง (SLA Calculator)</h3>
+        <h3>โปรแกรมคำนวณระดับความรุนแรงและระยะเวลาแก้ไข</h3>
         <div class="form-group">
             <div>
-                <label for="totalEquip">1. จำนวนอุปกรณ์/ตู้ ทั้งหมดในระบบ:</label>
-                <input type="number" id="totalEquip" min="1" placeholder="ระบุจำนวนทั้งหมด เช่น 36" oninput="calculateSLA()">
+                <label for="systemSelect">1. เลือกระบบ (System):</label>
+                <select id="systemSelect" onchange="updateSystemData()">
+                    <option value="">-- กรุณาเลือกระบบ --</option>
+                    <option value="CUTE">CUTE</option>
+                    <option value="CUSS">CUSS</option>
+                    <option value="CUBD">CUBD</option>
+                    <option value="PVS">PVS</option>
+                    <option value="SBG">SBG</option>
+                    <option value="BIO">BIO</option>
+                    <option value="FIDS">FIDS</option>
+                </select>
             </div>
             <div>
-                <label for="brokenEquip">2. จำนวนเครื่องที่ใช้งานไม่ได้ ณ ตอนนี้:</label>
-                <input type="number" id="brokenEquip" min="0" placeholder="ระบุจำนวนที่ชำรุด เช่น 5" oninput="calculateSLA()">
+                <label for="totalEquip">2. จำนวนอุปกรณ์ทั้งหมด:</label>
+                <input type="number" id="totalEquip" min="1" placeholder="กรอกจำนวนเครื่องทั้งหมด" oninput="calculateSLA()">
             </div>
+            <div>
+                <label for="brokenEquip">3. ใช้งานไม่ได้ (จำนวน):</label>
+                <input type="number" id="brokenEquip" min="0" placeholder="ระบุจำนวนที่เสีย" oninput="calculateSLA()" disabled>
+            </div>
+        </div>
+
+        <div id="systemInfoPanel" class="info-panel">
+            <h4 id="infoTitle">อ้างอิงข้อตกลงระดับคุณภาพการให้บริการ (SLA)</h4>
+            <div id="infoDetails"></div>
         </div>
         
         <div id="resultBox" class="result-box">
             <div class="result-title" id="pctResult">สัดส่วนความเสียหาย: -</div>
             <div class="result-value" id="severityResult">ระดับ: -</div>
-            <div id="descResult">กรุณากรอกข้อมูลให้ครบถ้วน</div>
+            <div id="descResult" style="font-size: 16px; margin-bottom: 10px;">กรุณากรอกข้อมูลให้ครบถ้วน</div>
+            <div class="resolution-time" id="timeResult"></div>
         </div>
     </div>
-
-    <h3>ตารางสรุปเกณฑ์มาตรฐาน (เปอร์เซ็นต์ความเสียหาย)</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>ระดับ SLA</th>
-                <th>สัดส่วนหลักเกณฑ์ (%)</th>
-                <th>คำอธิบายผลกระทบ</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="bg-low">
-                <td><span class="badge badge-low">Low</span></td>
-                <td>น้อยกว่า 5% (&lt; 5%)</td>
-                <td>ใช้งานไม่ได้ในสัดส่วนที่ต่ำมาก / กระทบระบบปกติต่ำ</td>
-            </tr>
-            <tr class="bg-medium">
-                <td><span class="badge badge-medium">Medium</span></td>
-                <td>ตั้งแต่ 5% ถึง 25% (5% - 25%)</td>
-                <td>ใช้งานไม่ได้ในระดับปานกลางเริ่มมีผลกระทบต่อเนื่อง</td>
-            </tr>
-            <tr class="bg-high">
-                <td><span class="badge badge-high">High</span></td>
-                <td>มากกว่า 25% แต่น้อยกว่า 75% (&gt; 25% - &lt; 75%)</td>
-                <td>ใช้งานไม่ได้ในปริมาณสูง ส่งผลกระทบเป็นวงกว้าง</td>
-            </tr>
-            <tr class="bg-critical">
-                <td><span class="badge badge-critical">Critical</span></td>
-                <td>ตั้งแต่ 75% ขึ้นไป (&ge; 75%)</td>
-                <td>ระบบใช้งานไม่ได้เกือบทั้งหมด หรือเสียหายรุนแรงวิกฤต</td>
-            </tr>
-        </tbody>
-    </table>
 </div>
 
 <script>
+// ฐานข้อมูลเกณฑ์ SLA แยกตามระบบ (อ้างอิงจากเอกสาร PDF)
+const slaData = {
+    "CUTE": {
+        defaultTotal: 36, // ค่าแนะนำเริ่มต้น ผู้ใช้แก้ได้
+        times: { critical: "75 นาที (1 ชม. 15 นาที)", high: "2 ชม. 30 นาที", medium: "6 ชม. 30 นาที", low: "24 ชั่วโมง" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> CUTE System ทำงานไม่ได้ทั้งระบบ หรือทำงานไม่ได้มากกว่า 75% ทุกสายการบินไม่สามารถเช็คอินได้</li>
+                <li><b>High (>25% - <75%):</b> CUTE Terminal ทำงานไม่ได้มากกว่า 25% - 75% หรือ DC Server/Gateway ทำงานไม่ได้มากกว่า 50%</li>
+                <li><b>Medium (5% - 25%):</b> CUTE Terminal ทำงานไม่ได้มากกว่า 5% - 25% (บางส่วนยังทำงานได้)</li>
+                <li><b>Low (<5%):</b> CUTE Terminal ทำงานไม่ได้น้อยกว่า 5% หรือตรวจพบอุปกรณ์ต่อพ่วงเสีย (ระบบยังทำงานได้)</li>
+            </ul>`
+    },
+    "CUSS": {
+        defaultTotal: 8,
+        times: { critical: "3 ชั่วโมง", high: "6 ชั่วโมง", medium: "12 ชั่วโมง", low: "24 ชั่วโมง" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> CUSS Kiosk ทำงานไม่ได้มากกว่า 75% (ส่งผลกระทบรุนแรงต่อธุรกิจ)</li>
+                <li><b>High (>25% - <75%):</b> CUSS Kiosk ทำงานไม่ได้มากกว่า 25% - 75%</li>
+                <li><b>Medium (5% - 25%):</b> CUSS Kiosk ทำงานไม่ได้ตั้งแต่ 5% - 25% (กระทบความสะดวก ทำงานล่าช้า)</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (ทำงานไม่ได้น้อยกว่า 5%)</li>
+            </ul>`
+    },
+    "CUBD": {
+        defaultTotal: 2,
+        times: { critical: "2 วัน", high: "3 วัน", medium: "5 วัน", low: "7 วัน" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> CUBD ทำงานไม่ได้มากกว่า 75% ไม่สามารถโหลดกระเป๋าได้</li>
+                <li><b>High (>25% - <75%):</b> CUBD ทำงานไม่ได้มากกว่า 25% - 75%</li>
+                <li><b>Medium (5% - 25%):</b> CUBD ทำงานไม่ได้มากกว่า 5% - 25% (ในเอกสารบางจุดระบุถึง 50% แต่อิงเกณฑ์มาตรฐาน)</li>
+                <li><b>Low (<5%):</b> CUBD ทำงานไม่ได้น้อยกว่า 5% หรือพบอุปกรณ์ต่อพ่วงเสีย</li>
+            </ul>`
+    },
+    "PVS": {
+        defaultTotal: 4,
+        times: { critical: "3 ชั่วโมง", high: "6 ชั่วโมง", medium: "12 ชั่วโมง", low: "24 ชั่วโมง" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> ระบบตรวจสอบยืนยันตัวตนผู้โดยสารทำงานไม่ได้มากกว่า 75%</li>
+                <li><b>High (>25% - <75%):</b> ใช้งานไม่ได้มากกว่า 25% - 75%</li>
+                <li><b>Medium (5% - 25%):</b> ใช้งานไม่ได้ตั้งแต่ 5% - 25% (ประสิทธิภาพต่ำลง)</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้</li>
+            </ul>`
+    },
+    "SBG": {
+        defaultTotal: 12,
+        times: { critical: "3 ชั่วโมง", high: "6 ชั่วโมง", medium: "12 ชั่วโมง", low: "24 ชั่วโมง" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> ระบบประตูทางออกขึ้นเครื่องอัตโนมัติทำงานไม่ได้มากกว่า 75%</li>
+                <li><b>High (>25% - <75%):</b> ใช้งานไม่ได้มากกว่า 25% - 75%</li>
+                <li><b>Medium (5% - 25%):</b> ใช้งานไม่ได้ตั้งแต่ 5% - 25%</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (น้อยกว่า 5%)</li>
+            </ul>`
+    },
+    "BIO": {
+        defaultTotal: 62,
+        times: { critical: "4 ชั่วโมง", high: "8 ชั่วโมง", medium: "24 ชั่วโมง", low: "48 ชั่วโมง" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> Automated Biometric System ทำงานไม่ได้มากกว่า 75%</li>
+                <li><b>High (>25% - <75%):</b> ใช้งานไม่ได้มากกว่า 25% - 75%</li>
+                <li><b>Medium (5% - 25%):</b> ใช้งานไม่ได้ตั้งแต่ 5% - 25%</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (น้อยกว่า 5%)</li>
+            </ul>`
+    },
+    "FIDS": {
+        defaultTotal: 10, // ค่าสมมติเบื้องต้น
+        times: { critical: "1 ชม. 15 นาที", high: "2 ชม. 30 นาที", medium: "6 ชม. 30 นาที", low: "24 ชั่วโมง" },
+        desc: `
+            <ul>
+                <li><b>Critical (≥75%):</b> FIDS ทำงานไม่ได้ทั้งระบบ หรือทำงานไม่ได้มากกว่า 75% ไม่สามารถแสดงผลข้อมูลตารางเที่ยวบินได้</li>
+                <li><b>High (>25% - <75%):</b> จอภาพแสดงผล/ระบบ ทำงานไม่ได้มากกว่า 25% - 75%</li>
+                <li><b>Medium (5% - 25%):</b> จอภาพแสดงผล/ระบบ ทำงานไม่ได้มากกว่า 5% - 25%</li>
+                <li><b>Low (<5%):</b> จอภาพแสดงผลทำงานไม่ได้น้อยกว่า 5% หรืออุปกรณ์ต่อพ่วงเสีย</li>
+            </ul>`
+    }
+};
+
+let currentSystem = "";
+
+function updateSystemData() {
+    const sysSelect = document.getElementById('systemSelect').value;
+    const totalInput = document.getElementById('totalEquip');
+    const brokenInput = document.getElementById('brokenEquip');
+    const infoPanel = document.getElementById('systemInfoPanel');
+    const infoDetails = document.getElementById('infoDetails');
+    const infoTitle = document.getElementById('infoTitle');
+    const resultBox = document.getElementById('resultBox');
+
+    if (sysSelect && slaData[sysSelect]) {
+        currentSystem = sysSelect;
+        // ใส่ค่าแนะนำให้ แต่ผู้ใช้สามารถคลิกแก้ตัวเลขได้อิสระ
+        totalInput.value = slaData[sysSelect].defaultTotal; 
+        brokenInput.disabled = false;
+        brokenInput.value = "";
+        
+        infoTitle.innerText = "อ้างอิง SLA ของระบบ : " + sysSelect;
+        infoDetails.innerHTML = slaData[sysSelect].desc;
+        infoPanel.style.display = "block";
+        resultBox.style.display = "none";
+        calculateSLA(); // ให้ลองคำนวณใหม่หากมีการเปลี่ยนระบบ
+    } else {
+        currentSystem = "";
+        totalInput.value = "";
+        brokenInput.value = "";
+        brokenInput.disabled = true;
+        infoPanel.style.display = "none";
+        resultBox.style.display = "none";
+    }
+}
+
 function calculateSLA() {
+    if (!currentSystem) return;
+
+    // คำนวณจากตัวเลขที่ผู้ใช้กรอกเอง ณ ปัจจุบัน
     const total = parseFloat(document.getElementById('totalEquip').value);
     const broken = parseFloat(document.getElementById('brokenEquip').value);
     const resultBox = document.getElementById('resultBox');
     const pctResult = document.getElementById('pctResult');
     const severityResult = document.getElementById('severityResult');
     const descResult = document.getElementById('descResult');
+    const timeResult = document.getElementById('timeResult');
+    const sysData = slaData[currentSystem];
 
-    // ตรวจสอบความถูกต้องของข้อมูลเบื้องต้น
-    if (isNaN(total) || isNaN(broken) || total <= 0 || broken < 0) {
+    if (isNaN(total) || total <= 0 || isNaN(broken) || broken < 0) {
         resultBox.style.display = "none";
         return;
     }
@@ -208,44 +295,42 @@ function calculateSLA() {
         resultBox.style.display = "block";
         resultBox.style.backgroundColor = "#f8d7da";
         resultBox.style.color = "#721c24";
-        resultBox.style.border = "1px solid #f5c6cb";
         pctResult.innerText = "เกิดข้อผิดพลาด";
         severityResult.innerText = "ข้อมูลไม่ถูกต้อง";
         descResult.innerText = "จำนวนเครื่องที่ใช้งานไม่ได้ ห้ามมากกว่าจำนวนเครื่องทั้งหมดครับ";
+        timeResult.innerText = "";
         return;
     }
 
-    // คำนวณหาเปอร์เซ็นต์ความเสียหาย
+    // สูตรการคำนวณ: (จำนวนที่เสีย / จำนวนทั้งหมด) * 100
     const percentage = (broken / total) * 100;
     resultBox.style.display = "block";
-    resultBox.style.border = "none";
     pctResult.innerText = `สัดส่วนความเสียหาย: ${percentage.toFixed(2)}% (${broken}/${total} เครื่อง)`;
 
-    // ตีความระดับความรุนแรงตามสูตรเกณฑ์มาตรฐาน %
     if (percentage >= 75) {
-        // Critical >= 75%
         resultBox.style.backgroundColor = "rgba(231, 76, 60, 0.2)";
         resultBox.style.color = "#c0392b";
         severityResult.innerText = "🔴 CRITICAL";
-        descResult.innerText = "สัดส่วนเสียหายสูงเกิน 75% เร่งเปิดเคสระดับวิกฤตด่วนที่สุด!";
+        descResult.innerText = "เสียหายวิกฤต (ตั้งแต่ 75% ขึ้นไป)";
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.critical}</span>`;
     } else if (percentage > 25 && percentage < 75) {
-        // High > 25% และ < 75%
         resultBox.style.backgroundColor = "rgba(230, 126, 34, 0.2)";
         resultBox.style.color = "#d35400";
         severityResult.innerText = "🟠 HIGH";
-        descResult.innerText = "สัดส่วนเสียหายอยู่ในช่วงสูง (มากกว่า 25% แต่ยังไม่ถึง 75%)";
+        descResult.innerText = "เสียหายรุนแรง (> 25% - < 75%)";
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.high}</span>`;
     } else if (percentage >= 5 && percentage <= 25) {
-        // Medium 5% - 25%
         resultBox.style.backgroundColor = "rgba(241, 196, 15, 0.25)";
         resultBox.style.color = "#9a7d0a";
         severityResult.innerText = "🟡 MEDIUM";
-        descResult.innerText = "สัดส่วนเสียหายระดับปานกลาง (ระหว่าง 5% ถึง 25%)";
+        descResult.innerText = "เสียหายระดับปานกลาง (5% - 25%)";
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.medium}</span>`;
     } else {
-        // Low < 5%
         resultBox.style.backgroundColor = "rgba(46, 204, 113, 0.2)";
         resultBox.style.color = "#1e7e34";
         severityResult.innerText = "🟢 LOW";
-        descResult.innerText = "สัดส่วนเสียหายน้อยมาก (ต่ำกว่า 5%) เป็นเคสระดับปกติ";
+        descResult.innerText = "เสียหายน้อยมาก / พบความผิดปกติ (< 5%)";
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.low}</span>`;
     }
 }
 </script>
