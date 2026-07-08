@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมคำนวณระดับความรุนแรง SLA (SLA Severity Calculator)</title>
+    <style>
+        :root {
+            --primary-color: #003366;
+            --low-color: #2ecc71;
+            --medium-color: #f1c40f;
+            --high-color: #e67e22;
+            --critical-color: #e74c3c;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        h2, h3 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-top: 0;
+        }
+        .header-bar {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+        .calculator-section {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            .form-group { grid-template-columns: 1fr; }
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0,51,102,0.2);
+        }
+        .result-box {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .result-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            color: #6c757d;
+        }
+        .result-value {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f1f3f5;
+            color: #495057;
+        }
+        .bg-low { background-color: rgba(46, 204, 113, 0.15); color: #1e7e34; }
+        .bg-medium { background-color: rgba(241, 196, 15, 0.15); color: #9a7d0a; }
+        .bg-high { background-color: rgba(230, 126, 34, 0.15); color: #d35400; }
+        .bg-critical { background-color: rgba(231, 76, 60, 0.15); color: #c0392b; }
+        
+        .badge {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+        }
+        .badge-low { background-color: var(--low-color); }
+        .badge-medium { background-color: var(--medium-color); color: #333; }
+        .badge-high { background-color: var(--high-color); }
+        .badge-critical { background-color: var(--critical-color); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bar">เกณฑ์การเปิดเคสตาม SLA แยกตามระบบ</div>
+    
+    <div class="calculator-section">
+        <h3>เครื่องมือคำนวณระดับความรุนแรง (SLA Calculator)</h3>
+        <div class="form-group">
+            <div>
+                <label for="totalEquip">1. จำนวนอุปกรณ์/ตู้ ทั้งหมดในระบบ:</label>
+                <input type="number" id="totalEquip" min="1" placeholder="ระบุจำนวนทั้งหมด เช่น 36" oninput="calculateSLA()">
+            </div>
+            <div>
+                <label for="brokenEquip">2. จำนวนเครื่องที่ใช้งานไม่ได้ ณ ตอนนี้:</label>
+                <input type="number" id="brokenEquip" min="0" placeholder="ระบุจำนวนที่ชำรุด เช่น 5" oninput="calculateSLA()">
+            </div>
+        </div>
+        
+        <div id="resultBox" class="result-box">
+            <div class="result-title" id="pctResult">สัดส่วนความเสียหาย: -</div>
+            <div class="result-value" id="severityResult">ระดับ: -</div>
+            <div id="descResult">กรุณากรอกข้อมูลให้ครบถ้วน</div>
+        </div>
+    </div>
+
+    <h3>ตารางสรุปเกณฑ์มาตรฐาน (เปอร์เซ็นต์ความเสียหาย)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ระดับ SLA</th>
+                <th>สัดส่วนหลักเกณฑ์ (%)</th>
+                <th>คำอธิบายผลกระทบ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="bg-low">
+                <td><span class="badge badge-low">Low</span></td>
+                <td>น้อยกว่า 5% (&lt; 5%)</td>
+                <td>ใช้งานไม่ได้ในสัดส่วนที่ต่ำมาก / กระทบระบบปกติต่ำ</td>
+            </tr>
+            <tr class="bg-medium">
+                <td><span class="badge badge-medium">Medium</span></td>
+                <td>ตั้งแต่ 5% ถึง 25% (5% - 25%)</td>
+                <td>ใช้งานไม่ได้ในระดับปานกลางเริ่มมีผลกระทบต่อเนื่อง</td>
+            </tr>
+            <tr class="bg-high">
+                <td><span class="badge badge-high">High</span></td>
+                <td>มากกว่า 25% แต่น้อยกว่า 75% (&gt; 25% - &lt; 75%)</td>
+                <td>ใช้งานไม่ได้ในปริมาณสูง ส่งผลกระทบเป็นวงกว้าง</td>
+            </tr>
+            <tr class="bg-critical">
+                <td><span class="badge badge-critical">Critical</span></td>
+                <td>ตั้งแต่ 75% ขึ้นไป (&ge; 75%)</td>
+                <td>ระบบใช้งานไม่ได้เกือบทั้งหมด หรือเสียหายรุนแรงวิกฤต</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function calculateSLA() {
+    const total = parseFloat(document.getElementById('totalEquip').value);
+    const broken = parseFloat(document.getElementById('brokenEquip').value);
+    const resultBox = document.getElementById('resultBox');
+    const pctResult = document.getElementById('pctResult');
+    const severityResult = document.getElementById('severityResult');
+    const descResult = document.getElementById('descResult');
+
+    // ตรวจสอบความถูกต้องของข้อมูลเบื้องต้น
+    if (isNaN(total) || isNaN(broken) || total <= 0 || broken < 0) {
+        resultBox.style.display = "none";
+        return;
+    }
+
+    if (broken > total) {
+        resultBox.style.display = "block";
+        resultBox.style.backgroundColor = "#f8d7da";
+        resultBox.style.color = "#721c24";
+        resultBox.style.border = "1px solid #f5c6cb";
+        pctResult.innerText = "เกิดข้อผิดพลาด";
+        severityResult.innerText = "ข้อมูลไม่ถูกต้อง";
+        descResult.innerText = "จำนวนเครื่องที่ใช้งานไม่ได้ ห้ามมากกว่าจำนวนเครื่องทั้งหมดครับ";
+        return;
+    }
+
+    // คำนวณหาเปอร์เซ็นต์ความเสียหาย
+    const percentage = (broken / total) * 100;
+    resultBox.style.display = "block";
+    resultBox.style.border = "none";
+    pctResult.innerText = `สัดส่วนความเสียหาย: ${percentage.toFixed(2)}% (${broken}/${total} เครื่อง)`;
+
+    // ตีความระดับความรุนแรงตามสูตรเกณฑ์มาตรฐาน %
+    if (percentage >= 75) {
+        // Critical >= 75%
+        resultBox.style.backgroundColor = "rgba(231, 76, 60, 0.2)";
+        resultBox.style.color = "#c0392b";
+        severityResult.innerText = "🔴 CRITICAL";
+        descResult.innerText = "สัดส่วนเสียหายสูงเกิน 75% เร่งเปิดเคสระดับวิกฤตด่วนที่สุด!";
+    } else if (percentage > 25 && percentage < 75) {
+        // High > 25% และ < 75%
+        resultBox.style.backgroundColor = "rgba(230, 126, 34, 0.2)";
+        resultBox.style.color = "#d35400";
+        severityResult.innerText = "🟠 HIGH";
+        descResult.innerText = "สัดส่วนเสียหายอยู่ในช่วงสูง (มากกว่า 25% แต่ยังไม่ถึง 75%)";
+    } else if (percentage >= 5 && percentage <= 25) {
+        // Medium 5% - 25%
+        resultBox.style.backgroundColor = "rgba(241, 196, 15, 0.25)";
+        resultBox.style.color = "#9a7d0a";
+        severityResult.innerText = "🟡 MEDIUM";
+        descResult.innerText = "สัดส่วนเสียหายระดับปานกลาง (ระหว่าง 5% ถึง 25%)";
+    } else {
+        // Low < 5%
+        resultBox.style.backgroundColor = "rgba(46, 204, 113, 0.2)";
+        resultBox.style.color = "#1e7e34";
+        severityResult.innerText = "🟢 LOW";
+        descResult.innerText = "สัดส่วนเสียหายน้อยมาก (ต่ำกว่า 5%) เป็นเคสระดับปกติ";
+    }
+}
+</script>
+
+</body>
+</html>
