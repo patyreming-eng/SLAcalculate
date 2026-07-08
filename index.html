@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SLA Severity Calculator (อ้างอิงเอกสาร SKY-WI-OS-02)</title>
+    <title>SLA Severity Calculator (AOT Only)</title>
     <style>
         :root {
-            --primary-color: #003366;
+            --primary-color: #0b3d91; /* สีน้ำเงินเข้ม */
             --low-color: #2ecc71;
             --medium-color: #f1c40f;
             --high-color: #e67e22;
@@ -76,7 +76,7 @@
         input:focus, select:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 5px rgba(0,51,102,0.2);
+            box-shadow: 0 0 5px rgba(11,61,145,0.2);
         }
         .result-box {
             text-align: center;
@@ -116,27 +116,26 @@
 <body>
 
 <div class="container">
-    <div class="header-bar">ระบบคำนวณเกณฑ์เปิดเคสและ SLA (อ้างอิง SKY-WI-OS-02)</div>
+    <div class="header-bar">ระบบคำนวณเกณฑ์ SLA ท่าอากาศยานไทย (AOT Only)</div>
     
     <div class="calculator-section">
-        <h3>โปรแกรมคำนวณระดับความรุนแรงและระยะเวลาแก้ไข</h3>
+        <h3>โปรแกรมคำนวณระดับความรุนแรงและระยะเวลาแก้ไข (AOT)</h3>
         <div class="form-group">
             <div>
                 <label for="systemSelect">1. เลือกระบบ (System):</label>
                 <select id="systemSelect" onchange="updateSystemData()">
                     <option value="">-- กรุณาเลือกระบบ --</option>
-                    <option value="CUTE">CUTE</option>
+                    <option value="CUTE">CUTE / CUPPS</option>
                     <option value="CUSS">CUSS</option>
                     <option value="CUBD">CUBD</option>
                     <option value="PVS">PVS</option>
                     <option value="SBG">SBG</option>
                     <option value="BIO">BIO</option>
-                    <option value="FIDS">FIDS</option>
                 </select>
             </div>
             <div>
                 <label for="totalEquip">2. จำนวนอุปกรณ์ทั้งหมด:</label>
-                <input type="number" id="totalEquip" min="1" placeholder="กรอกจำนวนเครื่องทั้งหมด" oninput="calculateSLA()">
+                <input type="number" id="totalEquip" min="1" placeholder="ระบุจำนวนเครื่องทั้งหมด" oninput="calculateSLA()">
             </div>
             <div>
                 <label for="brokenEquip">3. ใช้งานไม่ได้ (จำนวน):</label>
@@ -145,7 +144,7 @@
         </div>
 
         <div id="systemInfoPanel" class="info-panel">
-            <h4 id="infoTitle">อ้างอิงข้อตกลงระดับคุณภาพการให้บริการ (SLA)</h4>
+            <h4 id="infoTitle">อ้างอิงข้อตกลงระดับคุณภาพการให้บริการ AOT (SLA)</h4>
             <div id="infoDetails"></div>
         </div>
         
@@ -159,17 +158,17 @@
 </div>
 
 <script>
-// ฐานข้อมูลเกณฑ์ SLA แยกตามระบบ (อ้างอิงจากเอกสาร PDF)
+// ฐานข้อมูลเกณฑ์ SLA แยกตามระบบ เฉพาะ AOT (อ้างอิงเอกสาร SKY-WI-OS-02 หน้า 16-23)
 const slaData = {
     "CUTE": {
-        defaultTotal: 36, // ค่าแนะนำเริ่มต้น ผู้ใช้แก้ได้
+        defaultTotal: 36,
         times: { critical: "75 นาที (1 ชม. 15 นาที)", high: "2 ชม. 30 นาที", medium: "6 ชม. 30 นาที", low: "24 ชั่วโมง" },
         desc: `
             <ul>
-                <li><b>Critical (≥75%):</b> CUTE System ทำงานไม่ได้ทั้งระบบ หรือทำงานไม่ได้มากกว่า 75% ทุกสายการบินไม่สามารถเช็คอินได้</li>
+                <li><b>Critical (≥75%):</b> CUTE System ทำงานไม่ได้ทั้งระบบ หรือทำงานไม่ได้มากกว่า 75% (ทุกสายการบินเช็คอินไม่ได้)</li>
                 <li><b>High (>25% - <75%):</b> CUTE Terminal ทำงานไม่ได้มากกว่า 25% - 75% หรือ DC Server/Gateway ทำงานไม่ได้มากกว่า 50%</li>
-                <li><b>Medium (5% - 25%):</b> CUTE Terminal ทำงานไม่ได้มากกว่า 5% - 25% (บางส่วนยังทำงานได้)</li>
-                <li><b>Low (<5%):</b> CUTE Terminal ทำงานไม่ได้น้อยกว่า 5% หรือตรวจพบอุปกรณ์ต่อพ่วงเสีย (ระบบยังทำงานได้)</li>
+                <li><b>Medium (5% - 25%):</b> CUTE Terminal ทำงานไม่ได้ตั้งแต่ 5% - 25% (บางส่วนยังทำงานได้)</li>
+                <li><b>Low (<5%):</b> CUTE Terminal ทำงานไม่ได้น้อยกว่า 5% หรือตรวจพบอุปกรณ์ต่อพ่วงเสีย</li>
             </ul>`
     },
     "CUSS": {
@@ -180,7 +179,7 @@ const slaData = {
                 <li><b>Critical (≥75%):</b> CUSS Kiosk ทำงานไม่ได้มากกว่า 75% (ส่งผลกระทบรุนแรงต่อธุรกิจ)</li>
                 <li><b>High (>25% - <75%):</b> CUSS Kiosk ทำงานไม่ได้มากกว่า 25% - 75%</li>
                 <li><b>Medium (5% - 25%):</b> CUSS Kiosk ทำงานไม่ได้ตั้งแต่ 5% - 25% (กระทบความสะดวก ทำงานล่าช้า)</li>
-                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (ทำงานไม่ได้น้อยกว่า 5%)</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (น้อยกว่า 5%)</li>
             </ul>`
     },
     "CUBD": {
@@ -188,10 +187,10 @@ const slaData = {
         times: { critical: "2 วัน", high: "3 วัน", medium: "5 วัน", low: "7 วัน" },
         desc: `
             <ul>
-                <li><b>Critical (≥75%):</b> CUBD ทำงานไม่ได้มากกว่า 75% ไม่สามารถโหลดกระเป๋าได้</li>
+                <li><b>Critical (≥75%):</b> CUBD ทำงานไม่ได้มากกว่า 75% ส่งผลกระทบรุนแรง</li>
                 <li><b>High (>25% - <75%):</b> CUBD ทำงานไม่ได้มากกว่า 25% - 75%</li>
-                <li><b>Medium (5% - 25%):</b> CUBD ทำงานไม่ได้มากกว่า 5% - 25% (ในเอกสารบางจุดระบุถึง 50% แต่อิงเกณฑ์มาตรฐาน)</li>
-                <li><b>Low (<5%):</b> CUBD ทำงานไม่ได้น้อยกว่า 5% หรือพบอุปกรณ์ต่อพ่วงเสีย</li>
+                <li><b>Medium (5% - 25%):</b> CUBD ทำงานไม่ได้ตั้งแต่ 5% - 50% (อ้างอิงช่วง Medium จากเอกสาร)</li>
+                <li><b>Low (<5%):</b> CUBD ทำงานไม่ได้น้อยกว่า 5%</li>
             </ul>`
     },
     "PVS": {
@@ -213,7 +212,7 @@ const slaData = {
                 <li><b>Critical (≥75%):</b> ระบบประตูทางออกขึ้นเครื่องอัตโนมัติทำงานไม่ได้มากกว่า 75%</li>
                 <li><b>High (>25% - <75%):</b> ใช้งานไม่ได้มากกว่า 25% - 75%</li>
                 <li><b>Medium (5% - 25%):</b> ใช้งานไม่ได้ตั้งแต่ 5% - 25%</li>
-                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (น้อยกว่า 5%)</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้</li>
             </ul>`
     },
     "BIO": {
@@ -224,18 +223,7 @@ const slaData = {
                 <li><b>Critical (≥75%):</b> Automated Biometric System ทำงานไม่ได้มากกว่า 75%</li>
                 <li><b>High (>25% - <75%):</b> ใช้งานไม่ได้มากกว่า 25% - 75%</li>
                 <li><b>Medium (5% - 25%):</b> ใช้งานไม่ได้ตั้งแต่ 5% - 25%</li>
-                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้ (น้อยกว่า 5%)</li>
-            </ul>`
-    },
-    "FIDS": {
-        defaultTotal: 10, // ค่าสมมติเบื้องต้น
-        times: { critical: "1 ชม. 15 นาที", high: "2 ชม. 30 นาที", medium: "6 ชม. 30 นาที", low: "24 ชั่วโมง" },
-        desc: `
-            <ul>
-                <li><b>Critical (≥75%):</b> FIDS ทำงานไม่ได้ทั้งระบบ หรือทำงานไม่ได้มากกว่า 75% ไม่สามารถแสดงผลข้อมูลตารางเที่ยวบินได้</li>
-                <li><b>High (>25% - <75%):</b> จอภาพแสดงผล/ระบบ ทำงานไม่ได้มากกว่า 25% - 75%</li>
-                <li><b>Medium (5% - 25%):</b> จอภาพแสดงผล/ระบบ ทำงานไม่ได้มากกว่า 5% - 25%</li>
-                <li><b>Low (<5%):</b> จอภาพแสดงผลทำงานไม่ได้น้อยกว่า 5% หรืออุปกรณ์ต่อพ่วงเสีย</li>
+                <li><b>Low (<5%):</b> ตรวจพบความผิดปกติ แต่ระบบยังคงทำงานได้</li>
             </ul>`
     }
 };
@@ -253,16 +241,16 @@ function updateSystemData() {
 
     if (sysSelect && slaData[sysSelect]) {
         currentSystem = sysSelect;
-        // ใส่ค่าแนะนำให้ แต่ผู้ใช้สามารถคลิกแก้ตัวเลขได้อิสระ
+        // เติมค่า Default ให้ แต่ผู้ใช้แก้ไขได้อิสระ
         totalInput.value = slaData[sysSelect].defaultTotal; 
         brokenInput.disabled = false;
         brokenInput.value = "";
         
-        infoTitle.innerText = "อ้างอิง SLA ของระบบ : " + sysSelect;
+        infoTitle.innerText = "อ้างอิง SLA ของระบบ : " + sysSelect + " (AOT)";
         infoDetails.innerHTML = slaData[sysSelect].desc;
         infoPanel.style.display = "block";
         resultBox.style.display = "none";
-        calculateSLA(); // ให้ลองคำนวณใหม่หากมีการเปลี่ยนระบบ
+        calculateSLA();
     } else {
         currentSystem = "";
         totalInput.value = "";
@@ -276,7 +264,6 @@ function updateSystemData() {
 function calculateSLA() {
     if (!currentSystem) return;
 
-    // คำนวณจากตัวเลขที่ผู้ใช้กรอกเอง ณ ปัจจุบัน
     const total = parseFloat(document.getElementById('totalEquip').value);
     const broken = parseFloat(document.getElementById('brokenEquip').value);
     const resultBox = document.getElementById('resultBox');
@@ -302,35 +289,36 @@ function calculateSLA() {
         return;
     }
 
-    // สูตรการคำนวณ: (จำนวนที่เสีย / จำนวนทั้งหมด) * 100
+    // คำนวณเปอร์เซ็นต์
     const percentage = (broken / total) * 100;
     resultBox.style.display = "block";
     pctResult.innerText = `สัดส่วนความเสียหาย: ${percentage.toFixed(2)}% (${broken}/${total} เครื่อง)`;
 
+    // วิเคราะห์ระดับตามเกณฑ์ % ของ AOT
     if (percentage >= 75) {
         resultBox.style.backgroundColor = "rgba(231, 76, 60, 0.2)";
         resultBox.style.color = "#c0392b";
         severityResult.innerText = "🔴 CRITICAL";
         descResult.innerText = "เสียหายวิกฤต (ตั้งแต่ 75% ขึ้นไป)";
-        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.critical}</span>`;
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหา (SLA):</b> <br><span style="font-size:32px;">${sysData.times.critical}</span>`;
     } else if (percentage > 25 && percentage < 75) {
         resultBox.style.backgroundColor = "rgba(230, 126, 34, 0.2)";
         resultBox.style.color = "#d35400";
         severityResult.innerText = "🟠 HIGH";
         descResult.innerText = "เสียหายรุนแรง (> 25% - < 75%)";
-        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.high}</span>`;
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหา (SLA):</b> <br><span style="font-size:32px;">${sysData.times.high}</span>`;
     } else if (percentage >= 5 && percentage <= 25) {
         resultBox.style.backgroundColor = "rgba(241, 196, 15, 0.25)";
         resultBox.style.color = "#9a7d0a";
         severityResult.innerText = "🟡 MEDIUM";
         descResult.innerText = "เสียหายระดับปานกลาง (5% - 25%)";
-        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.medium}</span>`;
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหา (SLA):</b> <br><span style="font-size:32px;">${sysData.times.medium}</span>`;
     } else {
         resultBox.style.backgroundColor = "rgba(46, 204, 113, 0.2)";
         resultBox.style.color = "#1e7e34";
         severityResult.innerText = "🟢 LOW";
         descResult.innerText = "เสียหายน้อยมาก / พบความผิดปกติ (< 5%)";
-        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหาภายใน:</b> <br><span style="font-size:32px;">${sysData.times.low}</span>`;
+        timeResult.innerHTML = `⏱️ <b>ระยะเวลาแก้ไขปัญหา (SLA):</b> <br><span style="font-size:32px;">${sysData.times.low}</span>`;
     }
 }
 </script>
